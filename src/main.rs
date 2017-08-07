@@ -1,15 +1,15 @@
-extern crate cpuprofiler;
-use cpuprofiler::PROFILER;
+//extern crate cpuprofiler;
+//use cpuprofiler::PROFILER;
 
 extern crate bit_vec;
 use bit_vec::BitVec;
 
 use std::collections::HashSet;
 
-fn cycle_len(num: u64, mask: u64) -> usize {
-    let mut left = num;
-    let mut mask = mask;
-    let mut steps = 0;
+fn cycle_len(num: u64, mask: u64, skip_steps: usize) -> usize {
+    let mut left = num >> skip_steps;
+    let mut mask = mask >> skip_steps;
+    let mut steps = skip_steps;
     loop {
         left >>= 1;
         if left == (num & mask) {
@@ -53,7 +53,7 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
             let mut cycles = Vec::new();
             for &(shift, mask) in &shift_and_mask {
                 let subnum = start >> shift;
-                cycles.push(cycle_len(subnum, mask));
+                cycles.push(cycle_len(subnum, mask, 0));
             }
             cycles
         };
@@ -66,10 +66,9 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
         {
             continue;
         }
-        let specific_mask = size_mask >> end;
         let mut subset = BitVec::from_elem(size, false);
         for num in start..start + (1 << half_size) {
-            subset.set(cycle_len(num, size_mask), true);
+            subset.set(cycle_len(num, size_mask, end), true);
         }
         for (unique_cycle_len, _) in subset.into_iter().enumerate().filter(|x| x.1) {
             let mut new_l = leader.clone();
@@ -83,9 +82,9 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
 fn main() {
     let size: f32 = std::env::args().nth(1).unwrap().parse().unwrap();
     let size_log = size.log2() as usize;
-    PROFILER.lock().unwrap().start("./my-prof.profile").unwrap();
+    //PROFILER.lock().unwrap().start("./my-prof.profile").unwrap();
     let cycles = all_cycles(size_log);
-    PROFILER.lock().unwrap().stop().unwrap();
+    //PROFILER.lock().unwrap().stop().unwrap();
     println!(
         "Number of distinct arrays of periods of bitstrings of length {} is {}",
         1 << size_log,
