@@ -1,20 +1,23 @@
 extern crate cpuprofiler;
 use cpuprofiler::PROFILER;
 
+extern crate bit_vec;
+use bit_vec::BitVec;
 
 use std::collections::HashSet;
 
 fn cycle_len(num: u64, size: usize) -> usize {
     let mut left = num;
     let mut mask = (1 << (size - 1)) - 1;
-    for steps in 0..size {
+    let mut steps = 0;
+    loop {
         left >>= 1;
         if left ^ (num & mask) == 0 {
-            return steps + 1;
+            return steps;
         }
         mask >>= 1;
+        steps += 1;
     }
-    size
 }
 
 fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
@@ -49,22 +52,23 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
             }
             cycles
         };
-        let &end = leader.last().unwrap();
-        if (end..(size+1)).all(|count| {
-            let mut new = leader.clone();
-            new.push(count);
-            set.contains(&new)
-        })
-        {
-            continue;
+        if let Some(&end) = leader.last() {
+            if (end..size).all(|count| {
+                let mut new = leader.clone();
+                new.push(count);
+                set.contains(&new)
+            })
+            {
+                continue;
+            }
         }
-        let mut subset = HashSet::new();
+        let mut subset = BitVec::from_elem(size, false);
         for num in start..start + (1 << half_size) {
-            subset.insert(cycle_len(num, size));
+            subset.set(cycle_len(num, size), true);
         }
-        for unique_num in subset {
+        for (unique_cycle_len, _) in subset.into_iter().enumerate().filter(|x| x.1) {
             let mut new_l = leader.clone();
-            new_l.push(unique_num);
+            new_l.push(unique_cycle_len);
             set.insert(new_l);
         }
     }
