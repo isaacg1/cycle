@@ -6,15 +6,15 @@ use bit_vec::BitVec;
 
 use std::collections::HashSet;
 
-fn cycle_len(num: u64, mask: u64, skip_steps: usize) -> usize {
-    let mut left = num >> skip_steps;
+fn cycle_len(num: u32, mask: u32, skip_steps: usize) -> usize {
+    let mut left = num >> (skip_steps + 1);
     let mut mask = mask >> skip_steps;
     let mut steps = skip_steps;
     loop {
-        left >>= 1;
-        if left == (num & mask) {
+        if left == num & mask {
             return steps;
         }
+        left >>= 1;
         mask >>= 1;
         steps += 1;
     }
@@ -32,15 +32,15 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
     }
     let size: usize = 1 << size_log;
     let half_size: usize = 1 << size_log - 1;
-    let shift_and_mask: Vec<(usize, u64)> = (1..size_log)
+    let shift_and_mask: Vec<(usize, u32)> = (1..size_log)
         .map(|subsize_log| {
             let subsize = 1 << subsize_log;
             (size - subsize, (1 << (subsize - 1)) - 1)
         })
         .collect();
     let size_mask = (1 << (size - 1)) - 1;
-    for block in 0..(1 << (half_size - 1)) as u64 {
-        let start: u64 = block << half_size;
+    for block in 0..(1 << (half_size - 1)) as u32 {
+        let start: u32 = block << half_size;
         if block % 1024 == 0 {
             eprintln!(
                 "{} ({:.2}%): {}",
@@ -49,14 +49,10 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
                 set.len()
             );
         }
-        let leader = {
-            let mut cycles = Vec::new();
-            for &(shift, mask) in &shift_and_mask {
+        let leader: Vec<usize> = shift_and_mask.iter().map(|&(shift, mask)|{
                 let subnum = start >> shift;
-                cycles.push(cycle_len(subnum, mask, 0));
-            }
-            cycles
-        };
+                cycle_len(subnum, mask, 0)
+            }).collect();
         let &end = leader.last().unwrap();
         if (end..size).all(|count| {
             let mut new = leader.clone();
