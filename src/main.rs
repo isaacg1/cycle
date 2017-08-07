@@ -10,14 +10,12 @@ fn cycle_len(num: u32, mask: u32, skip_steps: usize) -> usize {
     let mut left = num >> (skip_steps + 1);
     let mut mask = mask >> skip_steps;
     let mut steps = skip_steps;
-    loop {
-        if left == num & mask {
-            return steps;
-        }
+    while left != num & mask {
         left >>= 1;
         mask >>= 1;
         steps += 1;
     }
+    steps
 }
 
 fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
