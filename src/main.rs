@@ -35,7 +35,7 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
     let shift_and_mask: Vec<(usize, u64)> = (1..size_log)
         .map(|subsize_log| {
             let subsize = 1 << subsize_log;
-            (size - subsize,  (1 << (subsize - 1)) - 1)
+            (size - subsize, (1 << (subsize - 1)) - 1)
         })
         .collect();
     let size_mask = (1 << (size - 1)) - 1;
@@ -58,14 +58,14 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
             cycles
         };
         let &end = leader.last().unwrap();
-            if (end..size).all(|count| {
-                let mut new = leader.clone();
-                new.push(count);
-                set.contains(&new)
-            })
-            {
-                continue;
-            }
+        if (end..size).all(|count| {
+            let mut new = leader.clone();
+            new.push(count);
+            set.contains(&new)
+        })
+        {
+            continue;
+        }
         let specific_mask = size_mask >> end;
         let mut subset = BitVec::from_elem(size, false);
         for num in start..start + (1 << half_size) {
