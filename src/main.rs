@@ -6,13 +6,13 @@ use bit_vec::BitVec;
 
 use std::collections::HashSet;
 
-fn cycle_len(num: u64, size: usize) -> usize {
+fn cycle_len(num: u64, mask: u64) -> usize {
     let mut left = num;
-    let mut mask = (1 << (size - 1)) - 1;
+    let mut mask = mask;
     let mut steps = 0;
     loop {
         left >>= 1;
-        if left ^ (num & mask) == 0 {
+        if left == (num & mask) {
             return steps;
         }
         mask >>= 1;
@@ -25,15 +25,20 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
     if size_log == 0 {
         set.insert(vec![]);
         return set;
+    } else if size_log == 1 {
+        set.insert(vec![0]);
+        set.insert(vec![1]);
+        return set;
     }
     let size: usize = 1 << size_log;
     let half_size: usize = 1 << size_log - 1;
-    let subsizes: Vec<usize> = (1..size_log)
+    let shift_and_mask: Vec<(usize, u64)> = (1..size_log)
         .map(|subsize_log| {
             let subsize = 1 << subsize_log;
-            subsize
+            (size - subsize,  (1 << (subsize - 1)) - 1)
         })
         .collect();
+    let size_mask = (1 << (size - 1)) - 1;
     for block in 0..(1 << (half_size - 1)) as u64 {
         let start: u64 = block << half_size;
         if block % 1024 == 0 {
@@ -46,13 +51,13 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
         }
         let leader = {
             let mut cycles = Vec::new();
-            for &subsize in &subsizes {
-                let subnum = start >> (size - subsize);
-                cycles.push(cycle_len(subnum, subsize));
+            for &(shift, mask) in &shift_and_mask {
+                let subnum = start >> shift;
+                cycles.push(cycle_len(subnum, mask));
             }
             cycles
         };
-        if let Some(&end) = leader.last() {
+        let &end = leader.last().unwrap();
             if (end..size).all(|count| {
                 let mut new = leader.clone();
                 new.push(count);
@@ -61,10 +66,10 @@ fn all_cycles(size_log: usize) -> HashSet<Vec<usize>> {
             {
                 continue;
             }
-        }
+        let specific_mask = size_mask >> end;
         let mut subset = BitVec::from_elem(size, false);
         for num in start..start + (1 << half_size) {
-            subset.set(cycle_len(num, size), true);
+            subset.set(cycle_len(num, size_mask), true);
         }
         for (unique_cycle_len, _) in subset.into_iter().enumerate().filter(|x| x.1) {
             let mut new_l = leader.clone();
