@@ -1,0 +1,9 @@
+[package]
+name = "cycle"
+version = "0.1.0"
+authors = ["Isaac Grosof <isaacbg227@gmail.com>"]
+
+[dependencies]
+
+[profile.release]
+debug = true
